@@ -4,23 +4,18 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Asistencia Escolar | Profe JB</title>
-  <!-- TailwindCSS CDN (para estilos rápidos) -->
   <script src="https://cdn.tailwindcss.com"></script>
-  <!-- React + ReactDOM + Babel (para escribir JSX en un solo archivo) -->
   <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
   <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
   <script crossorigin src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>✅</text></svg>">
-  <style>
-    /* Evita el parpadeo en dark mode del CDN */
-    html { color-scheme: light; }
-    /* Scroll bonito para tablas largas */
-    .scroll-thin { scrollbar-width: thin; }
-  </style>
-  <!-- PWA meta y manifest -->
   <meta name="theme-color" content="#0ea5e9" />
   <link rel="manifest" href="manifest.webmanifest" />
   <link rel="apple-touch-icon" href="icons/icon-192.png" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>✅</text></svg>">
+  <style>
+    html{color-scheme:light}
+    .scroll-thin{scrollbar-width:thin}
+  </style>
 </head>
 <body class="bg-slate-50 text-slate-900">
   <div id="root"></div>
@@ -28,12 +23,12 @@
   <script type="text/babel">
     // ===================== CONFIGURACIÓN BÁSICA =====================
     // === Autenticación simple (local, sin servidor) ===
-    // Cambia estos usuarios y contraseñas a tu gusto.
     const AUTH_USERS = [
       { user: 'profe', pass: 'jb2025', role: 'admin', nombre: 'Profe JB' },
       { user: 'ayudante', pass: '1234', role: 'invitado', nombre: 'Auxiliar' },
     ];
     const AUTH_STORAGE_KEY = 'asistenciaAuthV1';
+
     const MATERIAS = [
       { id: 'PMI', nombre: 'Pensamiento Matemático I' },
       { id: 'PMIII', nombre: 'Pensamiento Matemático III' },
@@ -50,9 +45,7 @@
 
     const STORAGE_KEY = 'asistenciaAppV1';
 
-    // ===================== UTILIDADES =====================
     const hoyISO = () => new Date().toISOString().slice(0,10);
-
     const uid = () => Math.random().toString(36).slice(2,9);
 
     const toCSV = (rows) => {
@@ -61,10 +54,13 @@
       const header = cols.join(',');
       const body = rows.map(r => cols.map(c => {
         const v = (r[c] ?? '').toString().replaceAll('"', '""');
-        const needsQuotes = /[",\n]/.test(v);
+        const needsQuotes = /[",
+]/.test(v);
         return needsQuotes ? `"${v}"` : v;
-      }).join(',')).join('\n');
-      return header + '\n' + body;
+      }).join(',')).join('
+');
+      return header + '
+' + body;
     }
 
     const download = (filename, content, mime='text/plain') => {
@@ -75,7 +71,6 @@
       URL.revokeObjectURL(a.href);
     }
 
-    // ===================== PERSISTENCIA =====================
     const defaultData = () => ({
       materias: Object.fromEntries(MATERIAS.map(m => [m.id, { alumnos: [], asistencias: {} }]))
     });
@@ -94,15 +89,13 @@
       localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
     };
 
-    // ===================== COMPONENTES =====================
     function Badge({children}) {
       return <span className="px-2 py-0.5 rounded-full text-xs bg-slate-200">{children}</span>;
     }
 
     function Pill({active, onClick, children}) {
       return (
-        <button onClick={onClick}
-          className={`px-3 py-1 rounded-full text-sm border ${active ? 'bg-slate-900 text-white border-slate-900' : 'bg-white hover:bg-slate-100 border-slate-300'}`}>
+        <button onClick={onClick} className={`px-3 py-1 rounded-full text-sm border ${active ? 'bg-slate-900 text-white border-slate-900' : 'bg-white hover:bg-slate-100 border-slate-300'}`}>
           {children}
         </button>
       )
@@ -110,8 +103,7 @@
 
     function Select({value, onChange, options}) {
       return (
-        <select value={value} onChange={e => onChange(e.target.value)}
-          className="border rounded-lg px-3 py-2 bg-white w-full">
+        <select value={value} onChange={e => onChange(e.target.value)} className="border rounded-lg px-3 py-2 bg-white w-full">
           {options.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
         </select>
       );
@@ -132,7 +124,6 @@
     // ------ Gestión de Alumnos ------
     function Alumnos({materiaId, data, setData}) {
       const [nombre, setNombre] = React.useState('');
-
       const alumnos = data.materias[materiaId].alumnos;
 
       const addAlumno = () => {
@@ -166,8 +157,7 @@
           <div className="grid md:grid-cols-3 gap-2">
             <div className="md:col-span-2">
               <label className="text-sm font-medium">Nombre del alumno</label>
-              <input value={nombre} onChange={e=>setNombre(e.target.value)} placeholder="Ej. Ana Paola Torres"
-                     className="mt-1 w-full border rounded-lg px-3 py-2" />
+              <input value={nombre} onChange={e=>setNombre(e.target.value)} placeholder="Ej. Ana Paola Torres" className="mt-1 w-full border rounded-lg px-3 py-2" />
             </div>
             <div className="flex items-end gap-2">
               <button onClick={addAlumno} className="w-full px-3 py-2 rounded-lg bg-emerald-600 text-white hover:bg-emerald-700">Agregar</button>
@@ -211,7 +201,6 @@
     function PaseLista({materiaId, data, setData}) {
       const alumnos = data.materias[materiaId].alumnos;
       const [fecha, setFecha] = React.useState(hoyISO());
-
       const registro = data.materias[materiaId].asistencias[fecha] || {};
 
       const setEstado = (alumnoId, estado) => {
@@ -237,12 +226,264 @@
               <label className="text-sm font-medium">Fecha</label>
               <input type="date" value={fecha} onChange={e=>setFecha(e.target.value)} className="mt-1 border rounded-lg px-3 py-2" />
             </div>
-            <div className=\"flex gap-2\">
-                <button id=\"btnInstall\" className=\"px-3 py-2 rounded-lg bg-sky-600 text-white hover:bg-sky-700\">Instalar en este dispositivo</button>
-                <div className=\"px-3 py-2 rounded-lg bg-slate-100 text-slate-700\">
-                  <span class=\"font-semibold\">{session.nombre}</span> · <span className=\"uppercase text-xs\">{session.role}</span>
+            <div className="flex gap-2">
+              {ESTADOS.map(s => (
+                <button key={s.id} onClick={()=>setTodos(s.id)} className="px-3 py-2 rounded-lg bg-slate-200 hover:bg-slate-300">
+                  Marcar todos: {s.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="bg-white rounded-xl shadow p-4">
+            <div className="flex items-center justify-between mb-2">
+              <h3 className="font-semibold">Pase de lista — {fecha}</h3>
+              <Badge>{alumnos.length} alumnos</Badge>
+            </div>
+
+            <div className="max-h-[60vh] overflow-auto scroll-thin">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="text-left border-b">
+                    <th className="py-2 pr-2">Alumno</th>
+                    {ESTADOS.map(s => <th key={s.id} className="py-2 text-center w-32">{s.label}</th>)}
+                  </tr>
+                </thead>
+                <tbody>
+                  {alumnos.map(a => (
+                    <tr key={a.id} className="border-b last:border-0">
+                      <td className="py-2 pr-2">{a.nombre}</td>
+                      {ESTADOS.map(s => (
+                        <td key={s.id} className="py-2 text-center">
+                          <input type="radio" name={`${fecha}-${a.id}`} checked={(registro[a.id]||'')===s.id} onChange={()=>setEstado(a.id, s.id)} />
+                        </td>
+                      ))}
+                    </tr>
+                  ))}
+                  {alumnos.length===0 && (
+                    <tr><td colSpan={1+ESTADOS.length} className="py-6 text-center text-slate-500">Primero agrega alumnos en la pestaña “Alumnos”.</td></tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // ------ Reportes ------
+    function Reportes({materiaId, data}) {
+      const [desde, setDesde] = React.useState('');
+      const [hasta, setHasta] = React.useState('');
+
+      const alumnos = data.materias[materiaId].alumnos;
+      const asist = data.materias[materiaId].asistencias;
+      const fechas = Object.keys(asist).sort();
+      const filtradas = fechas.filter(f => (!desde || f >= desde) && (!hasta || f <= hasta));
+
+      const conteoPorAlumno = (alumnoId) => {
+        const res = {A:0,F:0,R:0,J:0};
+        filtradas.forEach(fecha => {
+          const e = asist[fecha]?.[alumnoId];
+          if (e && res[e] !== undefined) res[e]++;
+        });
+        return res;
+      };
+
+      const exportCSV = () => {
+        const rows = [];
+        filtradas.forEach(fecha => {
+          alumnos.forEach(a => {
+            rows.push({ Fecha: fecha, Alumno: a.nombre, Estado: asist[fecha]?.[a.id] || '' });
+          })
+        });
+        const csv = toCSV(rows);
+        download(`reporte_${materiaId}_${(desde||'inicio')}_${(hasta||'hoy')}.csv`, csv, 'text/csv');
+      };
+
+      return (
+        <div className="space-y-4">
+          <div className="flex flex-wrap items-end gap-2">
+            <div>
+              <label className="text-sm font-medium">Desde</label>
+              <input type="date" value={desde} onChange={e=>setDesde(e.target.value)} className="mt-1 border rounded-lg px-3 py-2" />
+            </div>
+            <div>
+              <label className="text-sm font-medium">Hasta</label>
+              <input type="date" value={hasta} onChange={e=>setHasta(e.target.value)} className="mt-1 border rounded-lg px-3 py-2" />
+            </div>
+            <button onClick={exportCSV} className="px-3 py-2 rounded-lg bg-indigo-600 text-white hover:bg-indigo-700">Exportar CSV</button>
+          </div>
+
+          <div className="bg-white rounded-xl shadow p-4">
+            <h3 className="font-semibold mb-2">Resumen por alumno</h3>
+            <div className="max-h-80 overflow-auto scroll-thin">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="text-left border-b">
+                    <th className="py-2 pr-2">Alumno</th>
+                    <th className="py-2 text-center">Asistencias</th>
+                    <th className="py-2 text-center">Faltas</th>
+                    <th className="py-2 text-center">Retardos</th>
+                    <th className="py-2 text-center">Justificadas</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {alumnos.map(a => {
+                    const c = conteoPorAlumno(a.id);
+                    return (
+                      <tr key={a.id} className="border-b last:border-0">
+                        <td className="py-2 pr-2">{a.nombre}</td>
+                        <td className="py-2 text-center">{c.A}</td>
+                        <td className="py-2 text-center">{c.F}</td>
+                        <td className="py-2 text-center">{c.R}</td>
+                        <td className="py-2 text-center">{c.J}</td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-xl shadow p-4">
+            <h3 className="font-semibold mb-2">Detalle por fecha</h3>
+            <div className="max-h-80 overflow-auto scroll-thin">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="text-left border-b">
+                    <th className="py-2 pr-2 w-28">Fecha</th>
+                    <th className="py-2 pr-2">Alumno</th>
+                    <th className="py-2 pr-2">Estado</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filtradas.flatMap(fecha => (
+                    alumnos.map(a => (
+                      <tr key={`${fecha}-${a.id}`} className="border-b last:border-0">
+                        <td className="py-2 pr-2">{fecha}</td>
+                        <td className="py-2 pr-2">{a.nombre}</td>
+                        <td className="py-2 pr-2">{ESTADOS.find(s => s.id === (asist[fecha]?.[a.id]||''))?.label || ''}</td>
+                      </tr>
+                    ))
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // ------ Respaldos (Importar/Exportar) ------
+    function Respaldos({materiaId, data, setData}) {
+      const exportJSON = () => {
+        download(`asistencia_backup_${materiaId}.json`, JSON.stringify(data, null, 2), 'application/json');
+      };
+
+      const importJSON = (file) => {
+        const reader = new FileReader();
+        reader.onload = () => {
+          try {
+            const obj = JSON.parse(reader.result);
+            if (!obj?.materias) throw new Error('Archivo inválido');
+            setData(obj);
+            saveData(obj);
+            alert('Datos importados con éxito.');
+          } catch (e) {
+            alert('No se pudo importar: ' + e.message);
+          }
+        };
+        reader.readAsText(file);
+      };
+
+      return (
+        <div className="space-y-3">
+          <div className="bg-white rounded-xl shadow p-4 flex flex-wrap items-center gap-3">
+            <button onClick={exportJSON} className="px-3 py-2 rounded-lg bg-emerald-600 text-white hover:bg-emerald-700">Exportar respaldo (JSON)</button>
+            <label className="px-3 py-2 rounded-lg bg-slate-200 hover:bg-slate-300 cursor-pointer">Importar respaldo
+              <input type="file" accept="application/json" className="hidden" onChange={(e)=> e.target.files?.[0] && importJSON(e.target.files[0])} />
+            </label>
+            <p className="text-sm text-slate-600">Consejo: guarda respaldos en tu repo de GitHub para sincronizar entre equipos.</p>
+          </div>
+        </div>
+      );
+    }
+
+    // ------ Login ------
+    function Login({onAuth}) {
+      const [user, setUser] = React.useState('');
+      const [pass, setPass] = React.useState('');
+      const [show, setShow] = React.useState(false);
+      const [remember, setRemember] = React.useState(true);
+      const submit = (e) => {
+        e.preventDefault();
+        const found = AUTH_USERS.find(u => u.user === user && u.pass === pass);
+        if (!found) return alert('Usuario o contraseña incorrectos.');
+        const session = { user: found.user, role: found.role, nombre: found.nombre, ts: Date.now() };
+        if (remember) localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(session));
+        onAuth(session);
+      };
+      return (
+        <div className="min-h-screen flex items-center justify-center p-6">
+          <div className="w-full max-w-md bg-white rounded-2xl shadow p-6 space-y-4">
+            <h2 className="text-xl font-bold">Acceso — Registro de Asistencia</h2>
+            <form onSubmit={submit} className="space-y-3">
+              <div>
+                <label className="text-sm font-medium">Usuario</label>
+                <input value={user} onChange={e=>setUser(e.target.value)} className="mt-1 w-full border rounded-lg px-3 py-2" placeholder="profe" />
+              </div>
+              <div>
+                <label className="text-sm font-medium">Contraseña</label>
+                <div className="mt-1 flex gap-2">
+                  <input type={show? 'text':'password'} value={pass} onChange={e=>setPass(e.target.value)} className="w-full border rounded-lg px-3 py-2" placeholder="••••••" />
+                  <button type="button" onClick={()=>setShow(!show)} className="px-3 py-2 rounded-lg bg-slate-200">{show? 'Ocultar':'Ver'}</button>
                 </div>
-                <button onClick={onLogout} className=\"px-3 py-2 rounded-lg bg-rose-600 text-white hover:bg-rose-700\">Salir</button>
+              </div>
+              <label className="inline-flex items-center gap-2 text-sm"><input type="checkbox" checked={remember} onChange={e=>setRemember(e.target.checked)} /> Recordar acceso</label>
+              <button type="submit" className="w-full px-3 py-2 rounded-lg bg-sky-600 text-white hover:bg-sky-700">Entrar</button>
+            </form>
+            <p className="text-xs text-slate-500">Usuarios por defecto: <code>profe / jb2025</code> (admin) · <code>ayudante / 1234</code> (invitado). Cámbialos en <code>AUTH_USERS</code>.</p>
+          </div>
+        </div>
+      );
+    }
+
+    // ------ App Principal ------
+    function App() {
+      const [session, setSession] = React.useState(()=>{
+        try { return JSON.parse(localStorage.getItem(AUTH_STORAGE_KEY)) || null } catch { return null }
+      });
+      const onLogout = () => { localStorage.removeItem(AUTH_STORAGE_KEY); setSession(null); };
+      if (!session) return <Login onAuth={setSession} />;
+
+      const [data, setData] = React.useState(loadData());
+      const [materiaId, setMateriaId] = React.useState(MATERIAS[0].id);
+      const [tab, setTab] = React.useState('alumnos');
+
+      const tabs = [
+        {id: 'alumnos', label: 'Alumnos', only: 'admin'},
+        {id: 'pase', label: 'Pase de lista'},
+        {id: 'reportes', label: 'Reportes'},
+        {id: 'respaldos', label: 'Respaldos', only: 'admin'},
+      ].filter(t => !t.only || t.only === session.role);
+
+      const materiaOptions = MATERIAS.map(m => ({ value: m.id, label: m.nombre }));
+
+      return (
+        <div className="max-w-6xl mx-auto p-4 md:p-8">
+          <header className="mb-6">
+            <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-3">
+              <div>
+                <h1 className="text-2xl md:text-3xl font-bold">Registro de Asistencia</h1>
+                <p className="text-slate-600">Ultra simple, 100% local (navegador) y exportable. Ahora instalable (PWA).</p>
+              </div>
+              <div className="flex gap-2">
+                <button id="btnInstall" className="px-3 py-2 rounded-lg bg-sky-600 text-white hover:bg-sky-700">Instalar en este dispositivo</button>
+                <div className="px-3 py-2 rounded-lg bg-slate-100 text-slate-700">
+                  <span className="font-semibold">{session.nombre}</span> · <span className="uppercase text-xs">{session.role}</span>
+                </div>
+                <button onClick={onLogout} className="px-3 py-2 rounded-lg bg-rose-600 text-white hover:bg-rose-700">Salir</button>
               </div>
             </div>
           </header>
@@ -274,7 +515,6 @@
     root.render(<App />);
 
     // ===== PWA: instalación y Service Worker =====
-    // Captura del evento beforeinstallprompt para mostrar botón de instalación
     let deferredPrompt;
     window.addEventListener('beforeinstallprompt', (e) => {
       e.preventDefault();
@@ -285,19 +525,15 @@
 
     const btn = document.getElementById('btnInstall');
     if (btn) {
-      btn.style.display = 'none'; // oculto por defecto hasta que sea instalable
+      btn.style.display = 'none';
       btn.addEventListener('click', async () => {
-        if (!deferredPrompt) return alert('Si el botón no responde, abre desde HTTPS (GitHub Pages) y vuelve a intentar.');
+        if (!deferredPrompt) return alert('Abre desde HTTPS (GitHub Pages) y vuelve a intentar.');
         deferredPrompt.prompt();
-        const { outcome } = await deferredPrompt.userChoice;
-        if (outcome === 'accepted') {
-          console.log('PWA instalada');
-        }
+        await deferredPrompt.userChoice;
         deferredPrompt = null;
       });
     }
 
-    // Registro del Service Worker (requerido para PWA)
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
         navigator.serviceWorker.register('sw.js').catch(console.error);
