@@ -4,25 +4,39 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Asistencia Escolar | Profe JB</title>
-  <!-- TailwindCSS CDN (para estilos rápidos) -->
+
+  <!-- Estilos -->
   <script src="https://cdn.tailwindcss.com"></script>
-  <!-- React + ReactDOM + Babel (para escribir JSX en un solo archivo) -->
+
+  <!-- React + ReactDOM + Babel (para JSX en un solo archivo) -->
   <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
   <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
   <script crossorigin src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+  <!-- PWA -->
+  <meta name="theme-color" content="#0ea5e9" />
+  <link rel="manifest" href="manifest.webmanifest" />
+  <link rel="apple-touch-icon" href="icons/icon-192.png" />
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>✅</text></svg>">
+
   <style>
-    /* Evita el parpadeo en dark mode del CDN */
-    html { color-scheme: light; }
-    /* Scroll bonito para tablas largas */
-    .scroll-thin { scrollbar-width: thin; }
+    html { color-scheme: light; } /* Evita parpadeo dark con Tailwind CDN */
+    .scroll-thin { scrollbar-width: thin; } /* Scroll bonito en tablas */
   </style>
 </head>
 <body class="bg-slate-50 text-slate-900">
   <div id="root"></div>
 
   <script type="text/babel">
-    // ===================== CONFIGURACIÓN BÁSICA =====================
+    // ===================== CONFIGURACIÓN =====================
+    // Login local (sin servidor). Cambia estas credenciales si gustas.
+    const AUTH_USERS = [
+      { user: 'profe', pass: 'jb2025', role: 'admin', nombre: 'Profe JB' },
+      // Agrega más si quieres, o deja solo el tuyo.
+      // { user: 'ayudante', pass: '1234', role: 'invitado', nombre: 'Auxiliar' },
+    ];
+    const AUTH_STORAGE_KEY = 'asistenciaAuthV1';
+
     const MATERIAS = [
       { id: 'PMI', nombre: 'Pensamiento Matemático I' },
       { id: 'PMIII', nombre: 'Pensamiento Matemático III' },
@@ -30,29 +44,34 @@
       { id: 'LEN', nombre: 'La energía' },
     ];
 
+    // Sin "Justificada" como estado; se marca con un switch cuando es Falta.
     const ESTADOS = [
       { id: 'A', label: 'Asistencia' },
       { id: 'F', label: 'Falta' },
       { id: 'R', label: 'Retardo' },
-      { id: 'J', label: 'Justificada' },
     ];
 
-    const STORAGE_KEY = 'asistenciaAppV1';
+    const STORAGE_KEY = 'asistenciaAppV2'; // (nuevo por el cambio de modelo)
 
     // ===================== UTILIDADES =====================
     const hoyISO = () => new Date().toISOString().slice(0,10);
-
     const uid = () => Math.random().toString(36).slice(2,9);
 
     const toCSV = (rows) => {
       if (!rows || rows.length === 0) return '';
       const cols = Object.keys(rows[0]);
       const header = cols.join(',');
-      const body = rows.map(r => cols.map(c => {
-        const v = (r[c] ?? '').toString().replaceAll('"', '""');
-        const needsQuotes = /[",\n]/.test(v);
-        return needsQuotes ? `"${v}"` : v;
-      }).join(',')).join('\n');
+      const body = rows
+        .map(r =>
+          cols
+            .map(c => {
+              const v = (r[c] ?? '').toString().replaceAll('"', '""');
+              const needsQuotes = /[",\n]/.test(v);
+              return needsQuotes ? `"${v}"` : v;
+            })
+            .join(',')
+        )
+        .join('\n');
       return header + '\n' + body;
     }
 
@@ -65,6 +84,7 @@
     }
 
     // ===================== PERSISTENCIA =====================
+    // Modelo: asistencias[fecha][alumnoId] = { estado: 'A'|'F'|'R', justificada?: boolean }
     const defaultData = () => ({
       materias: Object.fromEntries(MATERIAS.map(m => [m.id, { alumnos: [], asistencias: {} }]))
     });
@@ -72,7 +92,8 @@
     const loadData = () => {
       try {
         const raw = localStorage.getItem(STORAGE_KEY);
-        return raw ? JSON.parse(raw) : defaultData();
+        const data = raw ? JSON.parse(raw) : defaultData();
+        return data;
       } catch (e) {
         console.error('Error cargando datos', e);
         return defaultData();
@@ -83,7 +104,7 @@
       localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
     };
 
-    // ===================== COMPONENTES =====================
+    // ===================== UI BASICOS =====================
     function Badge({children}) {
       return <span className="px-2 py-0.5 rounded-full text-xs bg-slate-200">{children}</span>;
     }
@@ -118,10 +139,55 @@
       )
     }
 
-    // ------ Gestión de Alumnos ------
+    // ===================== LOGIN =====================
+    function Login({onAuth}) {
+      const [user, setUser] = React.useState('');
+      const [pass, setPass] = React.useState('');
+      const [show, setShow] = React.useState(false);
+      const [remember, setRemember] = React.useState(true);
+
+      const submit = (e) => {
+        e.preventDefault();
+        const found = AUTH_USERS.find(u => u.user === user && u.pass === pass);
+        if (!found) return alert('Usuario o contraseña incorrectos.');
+        const session = { user: found.user, role: found.role, nombre: found.nombre, ts: Date.now() };
+        if (remember) localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(session));
+        onAuth(session);
+      };
+
+      return (
+        <div className="min-h-screen flex items-center justify-center p-6">
+          <div className="w-full max-w-md bg-white rounded-2xl shadow p-6 space-y-4">
+            <h2 className="text-xl font-bold">Acceso — Registro de Asistencia</h2>
+            <form onSubmit={submit} className="space-y-3">
+              <div>
+                <label className="text-sm font-medium">Usuario</label>
+                <input value={user} onChange={e=>setUser(e.target.value)} className="mt-1 w-full border rounded-lg px-3 py-2" placeholder="profe" />
+              </div>
+              <div>
+                <label className="text-sm font-medium">Contraseña</label>
+                <div className="mt-1 flex gap-2">
+                  <input type={show? 'text':'password'} value={pass} onChange={e=>setPass(e.target.value)} className="w-full border rounded-lg px-3 py-2" placeholder="••••••" />
+                  <button type="button" onClick={()=>setShow(!show)} className="px-3 py-2 rounded-lg bg-slate-200">{show? 'Ocultar':'Ver'}</button>
+                </div>
+              </div>
+              <label className="inline-flex items-center gap-2 text-sm">
+                <input type="checkbox" checked={remember} onChange={e=>setRemember(e.target.checked)} />
+                Recordar acceso
+              </label>
+              <button type="submit" className="w-full px-3 py-2 rounded-lg bg-sky-600 text-white hover:bg-sky-700">Entrar</button>
+            </form>
+            <p className="text-xs text-slate-500">
+              Usuario por defecto: <code>profe / jb2025</code>. Cámbialo en <code>AUTH_USERS</code>.
+            </p>
+          </div>
+        </div>
+      );
+    }
+
+    // ===================== ALUMNOS =====================
     function Alumnos({materiaId, data, setData}) {
       const [nombre, setNombre] = React.useState('');
-
       const alumnos = data.materias[materiaId].alumnos;
 
       const addAlumno = () => {
@@ -130,24 +196,20 @@
         const nuevo = { id: uid(), nombre: n };
         const next = {...data};
         next.materias[materiaId].alumnos = [...alumnos, nuevo];
-        setData(next);
-        saveData(next);
-        setNombre('');
+        setData(next); saveData(next); setNombre('');
       };
 
       const removeAlumno = (id) => {
         if (!confirm('¿Eliminar alumno? Se conservará su historial, pero ya no aparecerá en pases nuevos.')) return;
         const next = {...data};
         next.materias[materiaId].alumnos = alumnos.filter(a => a.id !== id);
-        setData(next);
-        saveData(next);
+        setData(next); saveData(next);
       };
 
       const ordenar = () => {
         const next = {...data};
         next.materias[materiaId].alumnos = [...alumnos].sort((a,b)=> a.nombre.localeCompare(b.nombre, 'es'));
-        setData(next);
-        saveData(next);
+        setData(next); saveData(next);
       };
 
       return (
@@ -196,7 +258,7 @@
       );
     }
 
-    // ------ Pase de Lista ------
+    // ===================== PASE DE LISTA =====================
     function PaseLista({materiaId, data, setData}) {
       const alumnos = data.materias[materiaId].alumnos;
       const [fecha, setFecha] = React.useState(hoyISO());
@@ -206,18 +268,41 @@
       const setEstado = (alumnoId, estado) => {
         const next = {...data};
         if (!next.materias[materiaId].asistencias[fecha]) next.materias[materiaId].asistencias[fecha] = {};
-        next.materias[materiaId].asistencias[fecha][alumnoId] = estado;
-        setData(next);
-        saveData(next);
+        const prev = next.materias[materiaId].asistencias[fecha][alumnoId];
+        const prevObj = (prev && typeof prev === 'object') ? prev : { estado: prev || '' };
+        next.materias[materiaId].asistencias[fecha][alumnoId] = {
+          estado,
+          justificada: estado === 'F' ? !!prevObj.justificada : false,
+        };
+        setData(next); saveData(next);
+      };
+
+      const setJustificada = (alumnoId, val) => {
+        const next = {...data};
+        if (!next.materias[materiaId].asistencias[fecha]) next.materias[materiaId].asistencias[fecha] = {};
+        const prev = next.materias[materiaId].asistencias[fecha][alumnoId];
+        const prevObj = (prev && typeof prev === 'object') ? prev : { estado: prev || 'F' };
+        next.materias[materiaId].asistencias[fecha][alumnoId] = {
+          estado: 'F',
+          justificada: !!val,
+        };
+        setData(next); saveData(next);
       };
 
       const setTodos = (estado) => {
         const next = {...data};
         if (!next.materias[materiaId].asistencias[fecha]) next.materias[materiaId].asistencias[fecha] = {};
-        alumnos.forEach(a => { next.materias[materiaId].asistencias[fecha][a.id] = estado; });
-        setData(next);
-        saveData(next);
+        alumnos.forEach(a => {
+          next.materias[materiaId].asistencias[fecha][a.id] = { estado, justificada: false };
+        });
+        setData(next); saveData(next);
       };
+
+      const estadoActual = (rec) => {
+        if (!rec) return '';
+        return (typeof rec === 'object') ? rec.estado : rec;
+      };
+      const justificadaActual = (rec) => !!(rec && typeof rec === 'object' && rec.justificada);
 
       return (
         <div className="space-y-4">
@@ -246,22 +331,45 @@
                 <thead>
                   <tr className="text-left border-b">
                     <th className="py-2 pr-2">Alumno</th>
-                    {ESTADOS.map(s => <th key={s.id} className="py-2 text-center w-32">{s.label}</th>)}
+                    {ESTADOS.map(s => <th key={s.id} className="py-2 text-center w-28">{s.label}</th>)}
+                    <th className="py-2 text-center w-40">Justificar</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {alumnos.map(a => (
-                    <tr key={a.id} className="border-b last:border-0">
-                      <td className="py-2 pr-2">{a.nombre}</td>
-                      {ESTADOS.map(s => (
-                        <td key={s.id} className="py-2 text-center">
-                          <input type="radio" name={`${fecha}-${a.id}`} checked={(registro[a.id]||'')===s.id} onChange={()=>setEstado(a.id, s.id)} />
+                  {alumnos.map(a => {
+                    const rec = registro[a.id];
+                    const est = estadoActual(rec);
+                    const jus = justificadaActual(rec);
+                    return (
+                      <tr key={a.id} className="border-b last:border-0">
+                        <td className="py-2 pr-2">{a.nombre}</td>
+                        {ESTADOS.map(s => (
+                          <td key={s.id} className="py-2 text-center">
+                            <input
+                              type="radio"
+                              name={`${fecha}-${a.id}`}
+                              checked={est === s.id}
+                              onChange={()=>setEstado(a.id, s.id)}
+                            />
+                          </td>
+                        ))}
+                        <td className="py-2 text-center">
+                          {est === 'F' ? (
+                            <label className="inline-flex items-center gap-2 text-sm">
+                              <input
+                                type="checkbox"
+                                checked={jus}
+                                onChange={(e)=>setJustificada(a.id, e.target.checked)}
+                              />
+                              Justificada
+                            </label>
+                          ) : <span className="text-slate-400 text-xs">—</span>}
                         </td>
-                      ))}
-                    </tr>
-                  ))}
+                      </tr>
+                    );
+                  })}
                   {alumnos.length===0 && (
-                    <tr><td colSpan={1+ESTADOS.length} className="py-6 text-center text-slate-500">Primero agrega alumnos en la pestaña “Alumnos”.</td></tr>
+                    <tr><td colSpan={1+ESTADOS.length+1} className="py-6 text-center text-slate-500">Primero agrega alumnos en la pestaña “Alumnos”.</td></tr>
                   )}
                 </tbody>
               </table>
@@ -271,7 +379,7 @@
       );
     }
 
-    // ------ Reportes ------
+    // ===================== REPORTES =====================
     function Reportes({materiaId, data}) {
       const [desde, setDesde] = React.useState('');
       const [hasta, setHasta] = React.useState('');
@@ -284,17 +392,29 @@
       const conteoPorAlumno = (alumnoId) => {
         const res = {A:0,F:0,R:0,J:0};
         filtradas.forEach(fecha => {
-          const e = asist[fecha]?.[alumnoId];
-          if (e && res[e] !== undefined) res[e]++;
+          let rec = asist[fecha]?.[alumnoId];
+          if (!rec) return;
+          if (typeof rec !== 'object') rec = { estado: rec }; // compatibilidad con datos viejos
+          if (rec.estado === 'F' && rec.justificada) res.J++;
+          else if (rec.estado === 'F') res.F++;
+          else if (rec.estado === 'A') res.A++;
+          else if (rec.estado === 'R') res.R++;
         });
         return res;
+      };
+
+      const etiquetaEstado = (rec) => {
+        if (!rec) return '';
+        if (typeof rec !== 'object') rec = { estado: rec };
+        if (rec.estado === 'F' && rec.justificada) return 'Justificada';
+        return (ESTADOS.find(s => s.id === rec.estado)?.label) || '';
       };
 
       const exportCSV = () => {
         const rows = [];
         filtradas.forEach(fecha => {
           alumnos.forEach(a => {
-            rows.push({ Fecha: fecha, Alumno: a.nombre, Estado: asist[fecha]?.[a.id] || '' });
+            rows.push({ Fecha: fecha, Alumno: a.nombre, Estado: etiquetaEstado(asist[fecha]?.[a.id]) });
           })
         });
         const csv = toCSV(rows);
@@ -363,7 +483,7 @@
                       <tr key={`${fecha}-${a.id}`} className="border-b last:border-0">
                         <td className="py-2 pr-2">{fecha}</td>
                         <td className="py-2 pr-2">{a.nombre}</td>
-                        <td className="py-2 pr-2">{ESTADOS.find(s => s.id === (asist[fecha]?.[a.id]||''))?.label || ''}</td>
+                        <td className="py-2 pr-2">{etiquetaEstado(asist[fecha]?.[a.id])}</td>
                       </tr>
                     ))
                   ))}
@@ -375,7 +495,7 @@
       );
     }
 
-    // ------ Respaldos (Importar/Exportar) ------
+    // ===================== RESPALDOS =====================
     function Respaldos({materiaId, data, setData}) {
       const exportJSON = () => {
         download(`asistencia_backup_${materiaId}.json`, JSON.stringify(data, null, 2), 'application/json');
@@ -387,8 +507,7 @@
           try {
             const obj = JSON.parse(reader.result);
             if (!obj?.materias) throw new Error('Archivo inválido');
-            setData(obj);
-            saveData(obj);
+            setData(obj); saveData(obj);
             alert('Datos importados con éxito.');
           } catch (e) {
             alert('No se pudo importar: ' + e.message);
@@ -410,8 +529,17 @@
       );
     }
 
-    // ------ App Principal ------
+    // ===================== APP PRINCIPAL =====================
     function App() {
+      // Sesión
+      const [session, setSession] = React.useState(()=>{
+        try { return JSON.parse(localStorage.getItem(AUTH_STORAGE_KEY)) || null } catch { return null }
+      });
+      const onLogout = () => { localStorage.removeItem(AUTH_STORAGE_KEY); setSession(null); };
+
+      if (!session) return <Login onAuth={setSession} />;
+
+      // Datos
       const [data, setData] = React.useState(loadData());
       const [materiaId, setMateriaId] = React.useState(MATERIAS[0].id);
       const [tab, setTab] = React.useState('alumnos');
@@ -428,8 +556,19 @@
       return (
         <div className="max-w-6xl mx-auto p-4 md:p-8">
           <header className="mb-6">
-            <h1 className="text-2xl md:text-3xl font-bold">Registro de Asistencia</h1>
-            <p className="text-slate-600">Ultra simple, 100% local (navegador) y exportable.</p>
+            <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-3">
+              <div>
+                <h1 className="text-2xl md:text-3xl font-bold">Registro de Asistencia</h1>
+                <p className="text-slate-600">Ultra simple, 100% local (navegador) y exportable. Instalable (PWA).</p>
+              </div>
+              <div className="flex gap-2">
+                <button id="btnInstall" className="px-3 py-2 rounded-lg bg-sky-600 text-white hover:bg-sky-700">Instalar en este dispositivo</button>
+                <div className="px-3 py-2 rounded-lg bg-slate-100 text-slate-700">
+                  <span className="font-semibold">{session.nombre}</span> · <span className="uppercase text-xs">{session.role}</span>
+                </div>
+                <button onClick={onLogout} className="px-3 py-2 rounded-lg bg-rose-600 text-white hover:bg-rose-700">Salir</button>
+              </div>
+            </div>
           </header>
 
           <section className="mb-4 grid md:grid-cols-3 gap-3">
@@ -457,6 +596,38 @@
 
     const root = ReactDOM.createRoot(document.getElementById('root'));
     root.render(<App />);
+
+    // ===== PWA: Instalación y Service Worker =====
+    let deferredPrompt;
+    window.addEventListener('beforeinstallprompt', (e) => {
+      e.preventDefault();
+      deferredPrompt = e;
+      const btn = document.getElementById('btnInstall');
+      if (btn) btn.style.display = 'inline-flex';
+    });
+
+    const btn = document.getElementById('btnInstall');
+    if (btn) {
+      btn.style.display = 'none'; // oculto por defecto
+      btn.addEventListener('click', async () => {
+        if (!deferredPrompt) return alert('Abre desde HTTPS (GitHub Pages) y vuelve a intentar.');
+        deferredPrompt.prompt();
+        await deferredPrompt.userChoice;
+        deferredPrompt = null;
+      });
+    }
+
+    window.addEventListener('appinstalled', () => {
+      const btn = document.getElementById('btnInstall');
+      if (btn) btn.style.display = 'none';
+    });
+
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('sw.js').catch(console.error);
+      });
+    }
   </script>
 </body>
 </html>
+
