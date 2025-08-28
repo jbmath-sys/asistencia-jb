@@ -16,7 +16,7 @@
   <!-- PWA -->
   <meta name="theme-color" content="#0ea5e9" />
   <link rel="manifest" href="/asistencia-jb/manifest.webmanifest" />
-  <link rel="apple-touch-icon" href="icons/icon-192.png" />
+  <link rel="apple-touch-icon" href="/asistencia-jb/icons/icon-192.png" />
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>✅</text></svg>">
 
   <style>
@@ -32,7 +32,7 @@
     // Login local (sin servidor). Cambia estas credenciales si gustas.
     const AUTH_USERS = [
       { user: 'profe', pass: 'jb2025', role: 'admin', nombre: 'Profe JB' },
-      // Agrega más si quieres, o deja solo el tuyo.
+      // Agrega más si quieres.
       // { user: 'ayudante', pass: '1234', role: 'invitado', nombre: 'Auxiliar' },
     ];
     const AUTH_STORAGE_KEY = 'asistenciaAuthV1';
@@ -561,12 +561,9 @@
                 <h1 className="text-2xl md:text-3xl font-bold">Registro de Asistencia</h1>
                 <p className="text-slate-600">Ultra simple, 100% local (navegador) y exportable. Instalable (PWA).</p>
               </div>
-              <div className="flex gap-2">
-                <button id="btnInstall" className="px-3 py-2 rounded-lg bg-sky-600 text-white hover:bg-sky-700">Instalar en este dispositivo</button>
-                <div className="px-3 py-2 rounded-lg bg-slate-100 text-slate-700">
-                  <span className="font-semibold">{session.nombre}</span> · <span className="uppercase text-xs">{session.role}</span>
-                </div>
-                <button onClick={onLogout} className="px-3 py-2 rounded-lg bg-rose-600 text-white hover:bg-rose-700">Salir</button>
+              <div className="px-3 py-2 rounded-lg bg-slate-100 text-slate-700">
+                <span className="font-semibold">{session.nombre}</span> · <span className="uppercase text-xs">{session.role}</span>
+                <button className="ml-3 px-3 py-2 rounded-lg bg-rose-600 text-white hover:bg-rose-700" onClick={onLogout}>Salir</button>
               </div>
             </div>
           </header>
@@ -597,38 +594,12 @@
     const root = ReactDOM.createRoot(document.getElementById('root'));
     root.render(<App />);
 
-    // ===== PWA: Instalación y Service Worker =====
-    let deferredPrompt;
-    window.addEventListener('beforeinstallprompt', (e) => {
-      e.preventDefault();
-      deferredPrompt = e;
-      const btn = document.getElementById('btnInstall');
-      if (btn) btn.style.display = 'inline-flex';
-    });
-
-    const btn = document.getElementById('btnInstall');
-    if (btn) {
-      btn.style.display = 'none'; // oculto por defecto
-      btn.addEventListener('click', async () => {
-        if (!deferredPrompt) return alert('Abre desde HTTPS (GitHub Pages) y vuelve a intentar.');
-        deferredPrompt.prompt();
-        await deferredPrompt.userChoice;
-        deferredPrompt = null;
+    // ===== PWA: Solo registro de Service Worker (sin botón de instalar) =====
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/asistencia-jb/sw.js').catch(console.error);
       });
     }
-
-    window.addEventListener('appinstalled', () => {
-      const btn = document.getElementById('btnInstall');
-      if (btn) btn.style.display = 'none';
-    });
-
-   if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/asistencia-jb/sw.js').catch(console.error);
-  });
-}
-
   </script>
 </body>
 </html>
-
