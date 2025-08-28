@@ -530,43 +530,53 @@
     }
 
     // ===================== APP PRINCIPAL =====================
-    function App() {
-      // Sesión
-      const [session, setSession] = React.useState(()=>{
-        try { return JSON.parse(localStorage.getItem(AUTH_STORAGE_KEY)) || null } catch { return null }
-      });
-      const onLogout = () => { localStorage.removeItem(AUTH_STORAGE_KEY); setSession(null); };
+function App() {
+  // Sesión
+  const [session, setSession] = React.useState(()=>{
+    try { return JSON.parse(localStorage.getItem(AUTH_STORAGE_KEY)) || null } catch { return null }
+  });
+  const onLogout = () => { localStorage.removeItem(AUTH_STORAGE_KEY); setSession(null); };
 
-      if (!session) return <Login onAuth={setSession} />;
+  if (!session) return <Login onAuth={setSession} />;
 
-      // Datos
-      const [data, setData] = React.useState(loadData());
-      const [materiaId, setMateriaId] = React.useState(MATERIAS[0].id);
-      const [tab, setTab] = React.useState('alumnos');
+  // Datos
+  const [data, setData] = React.useState(loadData());
+  const [materiaId, setMateriaId] = React.useState(MATERIAS[0].id);
+  const [tab, setTab] = React.useState('alumnos');
 
-      const tabs = [
-        {id: 'alumnos', label: 'Alumnos'},
-        {id: 'pase', label: 'Pase de lista'},
-        {id: 'reportes', label: 'Reportes'},
-        {id: 'respaldos', label: 'Respaldos'},
-      ];
+  const tabs = [
+    {id: 'alumnos', label: 'Alumnos'},
+    {id: 'pase', label: 'Pase de lista'},
+    {id: 'reportes', label: 'Reportes'},
+    {id: 'respaldos', label: 'Respaldos'},
+  ];
 
-      const materiaOptions = MATERIAS.map(m => ({ value: m.id, label: m.nombre }));
+  const materiaOptions = MATERIAS.map(m => ({ value: m.id, label: m.nombre }));
 
-      return (
-        <div className="max-w-6xl mx-auto p-4 md:p-8">
-          <header className="mb-6">
-            <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-3">
-              <div>
-                <h1 className="text-2xl md:text-3xl font-bold">Registro de Asistencia</h1>
-                <p className="text-slate-600">Ultra simple, 100% local (navegador) y exportable. Instalable (PWA).</p>
-              </div>
-              <div className="px-3 py-2 rounded-lg bg-slate-100 text-slate-700">
-                <span className="font-semibold">{session.nombre}</span> · <span className="uppercase text-xs">{session.role}</span>
-                <button className="ml-3 px-3 py-2 rounded-lg bg-rose-600 text-white hover:bg-rose-700" onClick={onLogout}>Salir</button>
-              </div>
+  return (
+    <div className="max-w-6xl mx-auto p-4 md:p-8">
+      <header className="mb-6">
+        <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-3">
+          {/* Bloque con logo + título */}
+          <div className="flex items-center gap-3">
+            <img src="/asistencia-jb/icons/icon-128.png"
+                 alt="Logo COBAEZ"
+                 className="w-12 h-12 rounded-lg shadow" />
+            <div>
+              <h1 className="text-2xl md:text-3xl font-bold">Registro de Asistencia</h1>
+              <p className="text-slate-600">Ultra simple, 100% local (navegador) y exportable. Instalable (PWA).</p>
             </div>
-          </header>
+          </div>
+
+          {/* Bloque con usuario y botón salir */}
+          <div className="px-3 py-2 rounded-lg bg-slate-100 text-slate-700 flex items-center gap-2">
+            <span className="font-semibold">{session.nombre}</span> · 
+            <span className="uppercase text-xs">{session.role}</span>
+            <button className="ml-3 px-3 py-2 rounded-lg bg-rose-600 text-white hover:bg-rose-700" onClick={onLogout}>Salir</button>
+          </div>
+        </div>
+      </header>
+
 
           <section className="mb-4 grid md:grid-cols-3 gap-3">
             <div className="md:col-span-2">
