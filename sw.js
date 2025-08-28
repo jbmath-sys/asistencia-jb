@@ -1,10 +1,10 @@
-const CACHE_NAME = "asistencia-jb-v2";
+const CACHE_NAME = "asistencia-jb-v3";
 const APP_SHELL = [
-  "./",
-  "./index.html",
-  "./manifest.webmanifest",
-  "./icons/icon-192.png",
-  "./icons/icon-512.png"
+  "/asistencia-jb/",
+  "/asistencia-jb/index.html",
+  "/asistencia-jb/manifest.webmanifest",
+  "/asistencia-jb/icons/icon-192.png",
+  "/asistencia-jb/icons/icon-512.png"
 ];
 
 self.addEventListener("install", (e) => {
